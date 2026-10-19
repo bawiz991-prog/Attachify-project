@@ -1,0 +1,1 @@
+<x-attachify-logo {{ $attributes }} />
