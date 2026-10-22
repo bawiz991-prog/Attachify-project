@@ -29,13 +29,23 @@ test('new users can register', function () {
         'name' => 'Test User',
         'email' => 'test@example.com',
         'role' => 'student',
+        'course' => 'Civil Engineering',
+        'registration_number' => 'REG-2026-01',
+        'student_number' => 'STU-2026-01',
         'password' => 'password',
         'password_confirmation' => 'password',
         'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature(),
     ]);
 
     $this->assertAuthenticated();
-    $this->assertDatabaseHas('users', ['email' => 'test@example.com', 'role' => 'student']);
+    $this->assertDatabaseHas('users', [
+        'email' => 'test@example.com',
+        'role' => 'student',
+        'course' => 'Civil Engineering',
+        'registration_number' => 'REG-2026-01',
+        'student_number' => 'STU-2026-01',
+        'verification_status' => 'pending',
+    ]);
     $response->assertRedirect(route('dashboard', absolute: false));
     $this->get(route('dashboard'))
         ->assertOk()
@@ -84,6 +94,21 @@ test('registration rejects roles outside the supported account types', function 
     ])->assertRedirect('/register')->assertSessionHasErrors('role');
 
     $this->assertDatabaseMissing('users', ['email' => 'unexpected@example.com']);
+})->skip(function () {
+    return ! Features::enabled(Features::registration());
+}, 'Registration support is not enabled.');
+
+test('student registration requires course and both student identifiers', function () {
+    $this->from('/register')->post('/register', [
+        'name' => 'Missing Details',
+        'email' => 'missing-details@example.com',
+        'role' => 'student',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ])->assertRedirect('/register')
+        ->assertSessionHasErrors(['course', 'registration_number', 'student_number']);
+
+    $this->assertDatabaseMissing('users', ['email' => 'missing-details@example.com']);
 })->skip(function () {
     return ! Features::enabled(Features::registration());
 }, 'Registration support is not enabled.');

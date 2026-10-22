@@ -35,6 +35,12 @@
         .attachify-mark { display: grid; width: 34px; height: 34px; place-items: center; background: var(--attachify-ink); color: var(--attachify-lime); border-radius: 4px; font-size: 16px; }
         .attachify-nav { display: flex; align-items: center; gap: 33px; color: #53635b; font-size: 13px; font-weight: 600; }
         .attachify-nav a:not(.attachify-nav-cta):hover { color: var(--attachify-ink); }
+        .attachify-mobile-menu { display: none; }
+        .attachify-mobile-menu summary { display: grid; width: 40px; height: 40px; place-items: center; border: 1px solid var(--attachify-line); border-radius: 4px; color: var(--attachify-ink); cursor: pointer; font-size: 22px; list-style: none; }
+        .attachify-mobile-menu summary::-webkit-details-marker { display: none; }
+        .attachify-mobile-menu[open] > div { position: absolute; z-index: 10; top: 58px; right: 0; width: min(290px, calc(100vw - 36px)); display: grid; gap: 3px; padding: 9px; border: 1px solid var(--attachify-line); border-radius: 4px; background: var(--attachify-white); box-shadow: 0 12px 30px rgba(25, 59, 49, .16); }
+        .attachify-mobile-menu a { padding: 11px 12px; border-radius: 3px; color: var(--attachify-ink); font-size: 13px; font-weight: 600; }
+        .attachify-mobile-menu a:hover { background: #edf2e4; }
         .attachify-nav-cta, .attachify-button { min-height: 45px; display: inline-flex; justify-content: center; align-items: center; gap: 12px; padding: 0 19px; border: 1px solid var(--attachify-ink); border-radius: 4px; background: var(--attachify-ink); color: white; font-size: 13px; font-weight: 700; transition: transform .18s ease, background-color .18s ease; }
         .attachify-nav-cta:hover, .attachify-button:hover { transform: translateY(-2px); background: #285142; }
         .attachify-button-light { background: transparent; color: var(--attachify-ink); }
@@ -97,6 +103,7 @@
             .attachify-header { height: 70px; }
             .attachify-nav { gap: 15px; }
             .attachify-nav > a:not(.attachify-nav-cta) { display: none; }
+            .attachify-mobile-menu { display: block; }
             .attachify-nav-cta { min-height: 39px; padding-inline: 12px; font-size: 11px; }
             .attachify-brand { font-size: 17px; }
             .attachify-hero { grid-template-columns: 1fr; gap: 35px; padding: 48px 0 45px; }
@@ -141,6 +148,8 @@
         <nav class="attachify-nav" aria-label="Main navigation">
             <a href="#process">The process</a>
             <a href="#supervisors">For supervisors</a>
+            <a href="{{ route('help') }}">Help</a>
+            <a href="{{ route('contact') }}">Contact</a>
             @auth
                 <a class="attachify-nav-cta" href="{{ route('dashboard') }}">Open workspace <span class="attachify-arrow" aria-hidden="true">&#8599;</span></a>
             @else
@@ -148,6 +157,22 @@
                 <a class="attachify-nav-cta" href="{{ route('register') }}">Create account <span class="attachify-arrow" aria-hidden="true">&#8599;</span></a>
             @endauth
         </nav>
+        <details class="attachify-mobile-menu">
+            <summary aria-label="Open navigation menu">&#9776;</summary>
+            <div>
+                <a href="#process">The process</a>
+                <a href="#supervisors">For supervisors</a>
+                <a href="{{ route('help') }}">Help centre</a>
+                <a href="{{ route('contact') }}">Contact us</a>
+                @auth
+                    <a href="{{ route('dashboard') }}">Open your workspace</a>
+                    <a href="{{ route('notifications.index') }}">Notifications</a>
+                @else
+                    <a href="{{ route('login') }}">Log in</a>
+                    <a href="{{ route('register') }}">Create account</a>
+                @endauth
+            </div>
+        </details>
     </header>
 
     <main>

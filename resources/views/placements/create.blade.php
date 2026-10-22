@@ -32,9 +32,15 @@
                     </div>
                     <div class="attachify-field">
                         <label for="acceptance_document">Company acceptance letter</label>
-                        <input id="acceptance_document" name="acceptance_document" type="file" accept=".pdf,.jpg,.jpeg,.png" required>
-                        <small>PDF or image, up to 10 MB. Stored privately with your placement.</small>
+                        <input id="acceptance_document" name="acceptance_document" type="file" accept="application/pdf,.pdf" required>
+                        <small>PDF only, up to 10 MB. Your administrator checks that both letters identify this organization.</small>
                         @error('acceptance_document') <small class="attachify-field-error">{{ $message }}</small> @enderror
+                    </div>
+                    <div class="attachify-field">
+                        <label for="placement_document">Faculty internship placement letter</label>
+                        <input id="placement_document" name="placement_document" type="file" accept="application/pdf,.pdf" required>
+                        <small>Upload the signed faculty placement letter as a PDF, up to 10 MB.</small>
+                        @error('placement_document') <small class="attachify-field-error">{{ $message }}</small> @enderror
                     </div>
                 </div>
             </section>

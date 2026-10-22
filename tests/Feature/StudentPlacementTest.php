@@ -29,12 +29,13 @@ test('a student can view the workspace and placement setup form', function () {
 
 test('a student can save placement details and a weekly schedule', function () {
     Storage::fake('local');
-    $student = User::factory()->create();
+    $student = User::factory()->create(['role' => 'student', 'verification_status' => 'approved']);
 
     $response = $this->actingAs($student)->post(route('placements.store'), [
         'company_name' => 'Northstar Engineering',
         'company_address' => '12 Market Road',
         'acceptance_document' => UploadedFile::fake()->create('acceptance.pdf', 40, 'application/pdf'),
+        'placement_document' => UploadedFile::fake()->create('placement-letter.pdf', 40, 'application/pdf'),
         'start_date' => '2026-11-02',
         'end_date' => '2027-01-29',
         'workdays' => ['1', '2', '3', '4', '5'],
@@ -44,8 +45,10 @@ test('a student can save placement details and a weekly schedule', function () {
 
     $response->assertRedirect(route('dashboard'));
     $placement = Placement::where('student_id', $student->id)->firstOrFail();
+    expect($placement->document_status)->toBe('pending');
     expect($placement->schedules)->toHaveCount(5);
     Storage::disk('local')->assertExists($placement->acceptance_document_path);
+    Storage::disk('local')->assertExists($placement->placement_document_path);
 });
 
 test('a student can connect their registered field supervisor by email', function () {
@@ -367,6 +370,9 @@ test('a student can submit a daily report for a scheduled workday', function () 
     $response = $this->actingAs($student)->post(route('reports.store', $placement), [
         'report_date' => $start->toDateString(),
         'activities' => 'Reviewed project drawings and updated the site progress register.',
+        'challenges' => 'Coordinated a late drawing revision with the site team.',
+        'skills_acquired' => 'Practised checking measurements against the project specification.',
+        'lessons_learned' => 'Confirm the latest drawing revision before starting a task.',
     ]);
 
     $response->assertRedirect(route('dashboard'));
@@ -388,6 +394,9 @@ test('a student cannot submit reports to another student placement', function ()
         ->post(route('reports.store', $placement), [
             'report_date' => now()->startOfWeek()->toDateString(),
             'activities' => 'This report should not be associated with another student.',
+            'challenges' => 'This report should not be accepted.',
+            'skills_acquired' => 'This report should not be accepted.',
+            'lessons_learned' => 'This report should not be accepted.',
         ])
         ->assertForbidden();
 });
