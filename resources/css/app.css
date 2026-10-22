@@ -16,7 +16,7 @@
 }
 
 .attachify-footer { flex: 0 0 auto; background: var(--attachify-ink); color: #f8f8ed; }
-.attachify-footer-inner { width: min(1180px, calc(100% - 64px)); min-height: 91px; display: flex; align-items: center; justify-content: space-between; gap: 24px; margin-inline: auto; padding: 15px 0; }
+.attachify-footer-inner { width: min(1180px, calc(100% - 64px)); min-height: 91px; display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 16px 24px; margin-inline: auto; padding: 15px 0; }
 .attachify-footer-logo { display: block; width: 115px; height: auto; }
 .attachify-footer p { margin: 0; color: #c5d0c3; font-size: 11px; }
 .attachify-footer a:not(:first-child) { color: #e3edc8; font-size: 12px; font-weight: 600; }

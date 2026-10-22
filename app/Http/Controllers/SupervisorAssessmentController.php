@@ -2,8 +2,8 @@
 
 namespace App\Http\Controllers;
 
-use App\Models\Placement;
 use App\Models\DailyReport;
+use App\Models\Placement;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 
@@ -14,6 +14,7 @@ class SupervisorAssessmentController extends Controller
         $supervisor = $request->user();
         abort_unless($dailyReport->placement_id === $placement->id, 404);
         abort_unless($dailyReport->status === 'submitted', 403);
+        abort_unless($supervisor->isApproved() && $placement->document_status === 'approved', 403);
 
         $assignedSupervisorId = match ($supervisor->role) {
             'field_supervisor' => $placement->field_supervisor_id,

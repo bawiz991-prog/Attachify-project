@@ -6,17 +6,33 @@
 
         <x-validation-errors class="mb-4" />
 
-        <form method="POST" action="{{ route('register') }}">
+        <form method="POST" action="{{ route('register') }}" x-data="{ role: '{{ old('role', 'student') }}' }">
             @csrf
 
             <div>
                 <x-label for="role" value="{{ __('I am registering as') }}" />
-                <select id="role" name="role" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
+                <select id="role" name="role" x-model="role" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
                     <option value="student" @selected(old('role', 'student') === 'student')>Student</option>
                     <option value="field_supervisor" @selected(old('role') === 'field_supervisor')>Field supervisor</option>
                     <option value="academic_supervisor" @selected(old('role') === 'academic_supervisor')>Academic supervisor</option>
                 </select>
                 <p class="mt-1 text-xs text-gray-500">Academic supervisors should use their school email. Field supervisors should use the work email shared with the student.</p>
+            </div>
+
+            <div x-show="role === 'student'" x-cloak>
+                <div class="mt-4">
+                    <x-label for="course" value="{{ __('Course / programme') }}" />
+                    <x-input id="course" class="block mt-1 w-full" type="text" name="course" :value="old('course')" x-bind:required="role === 'student'" autocomplete="organization-title" />
+                </div>
+                <div class="mt-4">
+                    <x-label for="registration_number" value="{{ __('Registration number') }}" />
+                    <x-input id="registration_number" class="block mt-1 w-full" type="text" name="registration_number" :value="old('registration_number')" x-bind:required="role === 'student'" />
+                </div>
+                <div class="mt-4">
+                    <x-label for="student_number" value="{{ __('Student number') }}" />
+                    <x-input id="student_number" class="block mt-1 w-full" type="text" name="student_number" :value="old('student_number')" x-bind:required="role === 'student'" />
+                </div>
+                <p class="mt-2 text-xs text-gray-500">Student details are reviewed by an ATTACHIFY administrator before placement tools are enabled.</p>
             </div>
 
             <div>

@@ -15,6 +15,16 @@
                     <x-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
                         {{ __('Dashboard') }}
                     </x-nav-link>
+                    @if (Auth::user()->role === 'admin')
+                        <x-nav-link href="{{ route('admin.dashboard') }}" :active="request()->routeIs('admin.*')">
+                            {{ __('Administration') }}
+                        </x-nav-link>
+                    @endif
+                    <x-nav-link href="{{ route('notifications.index') }}" :active="request()->routeIs('notifications.*')">
+                        {{ __('Notifications') }}{{ Auth::user()->unreadNotifications()->exists() ? ' ('.Auth::user()->unreadNotifications()->count().')' : '' }}
+                    </x-nav-link>
+                    <x-nav-link href="{{ route('help') }}" :active="request()->routeIs('help')">{{ __('Help') }}</x-nav-link>
+                    <x-nav-link href="{{ route('contact') }}" :active="request()->routeIs('contact')">{{ __('Contact') }}</x-nav-link>
                 </div>
             </div>
 
@@ -142,6 +152,16 @@
             <x-responsive-nav-link href="{{ route('dashboard') }}" :active="request()->routeIs('dashboard')">
                 {{ __('Dashboard') }}
             </x-responsive-nav-link>
+            @if (Auth::user()->role === 'admin')
+                <x-responsive-nav-link href="{{ route('admin.dashboard') }}" :active="request()->routeIs('admin.*')">
+                    {{ __('Administration') }}
+                </x-responsive-nav-link>
+            @endif
+            <x-responsive-nav-link href="{{ route('notifications.index') }}" :active="request()->routeIs('notifications.*')">
+                {{ __('Notifications') }}{{ Auth::user()->unreadNotifications()->exists() ? ' ('.Auth::user()->unreadNotifications()->count().')' : '' }}
+            </x-responsive-nav-link>
+            <x-responsive-nav-link href="{{ route('help') }}" :active="request()->routeIs('help')">{{ __('Help') }}</x-responsive-nav-link>
+            <x-responsive-nav-link href="{{ route('contact') }}" :active="request()->routeIs('contact')">{{ __('Contact') }}</x-responsive-nav-link>
         </div>
 
         <!-- Responsive Settings Options -->

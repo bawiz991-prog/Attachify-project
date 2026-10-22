@@ -15,6 +15,11 @@ class Placement extends Model
         'company_name',
         'company_address',
         'acceptance_document_path',
+        'placement_document_path',
+        'document_status',
+        'document_reviewed_by_id',
+        'document_reviewed_at',
+        'document_review_notes',
         'start_date',
         'end_date',
         'status',
@@ -61,5 +66,15 @@ class Placement extends Model
     public function assessments(): HasMany
     {
         return $this->hasMany(SupervisorAssessment::class);
+    }
+
+    public function finalAssessments(): HasMany
+    {
+        return $this->hasMany(PlacementAssessment::class);
+    }
+
+    public function supervisorMessages(): HasMany
+    {
+        return $this->hasMany(SupervisorMessage::class);
     }
 }

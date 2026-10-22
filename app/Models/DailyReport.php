@@ -12,6 +12,9 @@ class DailyReport extends Model
         'placement_id',
         'report_date',
         'activities',
+        'challenges',
+        'skills_acquired',
+        'lessons_learned',
         'status',
         'submitted_at',
     ];

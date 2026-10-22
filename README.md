@@ -7,6 +7,67 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
+## Running Attachify with XAMPP
+
+The project's Laravel migrations are in `database/migrations`. To create the
+tables in your local XAMPP MySQL database:
+
+1. Start **MySQL** in the XAMPP Control Panel. Start **Apache** too if you plan
+   to serve the app through XAMPP.
+2. In phpMyAdmin (`http://localhost/phpmyadmin`), create an empty database
+   named `laravelauth`.
+3. From the project folder, install dependencies and create your local
+   environment file:
+
+   ```powershell
+   composer install
+   if (-not (Test-Path .env)) { Copy-Item .env.example .env }
+   ```
+
+   If you already have a `.env` file, keep it and check that its database
+   settings point to XAMPP:
+
+   ```dotenv
+   DB_CONNECTION=mysql
+   DB_HOST=127.0.0.1
+   DB_PORT=3306
+   DB_DATABASE=laravelauth
+   DB_USERNAME=root
+   DB_PASSWORD=
+   ```
+
+   Change `DB_DATABASE`, `DB_USERNAME`, or `DB_PASSWORD` if your local MySQL
+   settings are different.
+4. Generate the app key and run the migrations:
+
+   ```powershell
+   php artisan key:generate
+   php artisan migrate
+   ```
+
+   If `php` is not on your PATH, use XAMPP's PHP executable instead:
+   `& C:\xampp\php\php.exe artisan migrate` (and the same executable for other
+   Artisan commands).
+   To create the first administrator, register an account normally, then
+   promote it from PowerShell with `php artisan attachify:make-admin
+   admin@example.com`. Confirm the prompt. Administrators approve student and
+   supervisor accounts and check both placement PDFs before daily reporting
+   starts.
+5. Install Node.js LTS (which includes npm), then build the frontend assets:
+
+   ```powershell
+   npm install
+   npm run build
+   ```
+
+   If you install Node.js while PowerShell is open, open a new terminal so
+   `node` and `npm` are available on PATH.
+
+To use XAMPP Apache, configure the site's document root to this project's
+`public` folder. Alternatively, run `php artisan serve` from the project
+folder. Do not use `php artisan migrate:fresh` on a database with data; it
+drops existing tables.
+
 ## About Laravel
 
 Laravel is a web application framework with expressive, elegant syntax. We believe development must be an enjoyable and creative experience to be truly fulfilling. Laravel takes the pain out of development by easing common tasks used in many web projects, such as:

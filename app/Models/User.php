@@ -5,9 +5,9 @@ namespace App\Models;
 // use Illuminate\Contracts\Auth\MustVerifyEmail;
 use Database\Factories\UserFactory;
 use Illuminate\Database\Eloquent\Factories\HasFactory;
+use Illuminate\Database\Eloquent\Relations\HasMany;
 use Illuminate\Foundation\Auth\User as Authenticatable;
 use Illuminate\Notifications\Notifiable;
-use Illuminate\Database\Eloquent\Relations\HasMany;
 use Laravel\Fortify\TwoFactorAuthenticatable;
 use Laravel\Jetstream\HasProfilePhoto;
 use Laravel\Sanctum\HasApiTokens;
@@ -32,6 +32,8 @@ class User extends Authenticatable
         'name',
         'email',
         'student_number',
+        'registration_number',
+        'course',
         'password',
     ];
 
@@ -48,6 +50,26 @@ class User extends Authenticatable
     public function academicSupervisions(): HasMany
     {
         return $this->hasMany(Placement::class, 'academic_supervisor_id');
+    }
+
+    public function sentSupervisorMessages(): HasMany
+    {
+        return $this->hasMany(SupervisorMessage::class, 'sender_id');
+    }
+
+    public function placementAssessments(): HasMany
+    {
+        return $this->hasMany(PlacementAssessment::class, 'supervisor_id');
+    }
+
+    public function reviewedUsers(): HasMany
+    {
+        return $this->hasMany(self::class, 'verified_by_id');
+    }
+
+    public function isApproved(): bool
+    {
+        return $this->verification_status === 'approved';
     }
 
     /**
