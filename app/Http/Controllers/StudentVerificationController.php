@@ -18,7 +18,9 @@ class StudentVerificationController extends Controller
             'course' => ['required', 'string', 'max:255'],
             'registration_number' => ['required', 'string', 'max:100', Rule::unique('users')->ignore($request->user()->id)],
             'student_number' => ['required', 'string', 'max:100', Rule::unique('users')->ignore($request->user()->id)],
+            'year_of_study' => ['required', 'integer', 'between:1,6'],
         ]);
+        $validated['year_of_study'] = (int) $validated['year_of_study'];
 
         $user = $request->user();
         $changed = collect($validated)->contains(fn ($value, $key) => $value !== $user->{$key});

@@ -32,6 +32,15 @@
                     <x-label for="student_number" value="{{ __('Student number') }}" />
                     <x-input id="student_number" class="block mt-1 w-full" type="text" name="student_number" :value="old('student_number')" x-bind:required="role === 'student'" />
                 </div>
+                <div class="mt-4">
+                    <x-label for="year_of_study" value="{{ __('Year of study') }}" />
+                    <select id="year_of_study" name="year_of_study" x-bind:required="role === 'student'" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm">
+                        <option value="">Select your year</option>
+                        @foreach (range(1, 6) as $year)
+                            <option value="{{ $year }}" @selected((string) old('year_of_study') === (string) $year)>Year {{ $year }}</option>
+                        @endforeach
+                    </select>
+                </div>
                 <p class="mt-2 text-xs text-gray-500">Student details are reviewed by an ATTACHIFY administrator before placement tools are enabled.</p>
             </div>
 

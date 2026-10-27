@@ -51,7 +51,7 @@
                                 <h3 class="font-semibold">{{ $user->name }}</h3>
                                 <p class="text-sm text-gray-600">{{ $user->email }} · {{ str_replace('_', ' ', ucfirst($user->role)) }} · {{ ucfirst($user->verification_status) }}</p>
                                 @if ($user->role === 'student')
-                                    <p class="mt-1 text-sm text-gray-600">Course: {{ $user->course ?: 'Not provided' }} · Registration no.: {{ $user->registration_number ?: 'Not provided' }} · Student no.: {{ $user->student_number ?: 'Not provided' }}</p>
+                                    <p class="mt-1 text-sm text-gray-600">Course: {{ $user->course ?: 'Not provided' }} · Registration no.: {{ $user->registration_number ?: 'Not provided' }} · Student no.: {{ $user->student_number ?: 'Not provided' }} · Year of study: {{ $user->year_of_study ?: 'Not provided' }}</p>
                                 @endif
                                 @if ($user->verification_notes)
                                     <p class="mt-1 text-sm text-gray-600">Previous review: {{ $user->verification_notes }}</p>

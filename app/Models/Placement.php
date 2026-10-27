@@ -33,6 +33,20 @@ class Placement extends Model
         ];
     }
 
+    public function isWithinAcademicAssessmentWindow(): bool
+    {
+        if (! $this->start_date || ! $this->end_date) {
+            return false;
+        }
+
+        $opensOn = $this->end_date->copy()->subDays(6);
+        if ($opensOn->lessThan($this->start_date)) {
+            $opensOn = $this->start_date->copy();
+        }
+
+        return today()->between($opensOn, $this->end_date);
+    }
+
     public function student(): BelongsTo
     {
         return $this->belongsTo(User::class, 'student_id');

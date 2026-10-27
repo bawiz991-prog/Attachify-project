@@ -28,6 +28,7 @@ class CreateNewUser implements CreatesNewUsers
             'course' => ['required_if:role,student', 'nullable', 'string', 'max:255'],
             'registration_number' => ['required_if:role,student', 'nullable', 'string', 'max:100', 'unique:users,registration_number'],
             'student_number' => ['required_if:role,student', 'nullable', 'string', 'max:100', 'unique:users,student_number'],
+            'year_of_study' => ['required_if:role,student', 'nullable', 'integer', 'between:1,6'],
             'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature() ? ['accepted', 'required'] : '',
         ])->validate();
 
@@ -38,6 +39,7 @@ class CreateNewUser implements CreatesNewUsers
             'course' => $validated['course'] ?? null,
             'registration_number' => $validated['registration_number'] ?? null,
             'student_number' => $validated['student_number'] ?? null,
+            'year_of_study' => $validated['year_of_study'] ?? null,
         ]);
         $user->role = $validated['role'];
         $user->verification_status = 'pending';

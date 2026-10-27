@@ -34,6 +34,7 @@ class User extends Authenticatable
         'student_number',
         'registration_number',
         'course',
+        'year_of_study',
         'password',
     ];
 
@@ -103,6 +104,7 @@ class User extends Authenticatable
         return [
             'email_verified_at' => 'datetime',
             'password' => 'hashed',
+            'year_of_study' => 'integer',
         ];
     }
 }

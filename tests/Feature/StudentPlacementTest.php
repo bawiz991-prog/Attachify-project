@@ -351,6 +351,63 @@ test('a supervisor cannot assess a draft daily report', function () {
     $this->assertDatabaseCount('supervisor_assessments', 0);
 });
 
+test('academic final assessments can only be submitted during the final seven placement days', function () {
+    $this->travelTo('2026-11-08 12:00:00');
+    $supervisor = User::factory()->create(['role' => 'academic_supervisor']);
+    $student = User::factory()->create(['role' => 'student']);
+    $placement = Placement::create([
+        'student_id' => $student->id,
+        'academic_supervisor_id' => $supervisor->id,
+        'company_name' => 'Northstar Engineering',
+        'start_date' => '2026-11-02',
+        'end_date' => '2026-11-15',
+        'document_status' => 'approved',
+        'status' => 'active',
+    ]);
+
+    $this->actingAs($supervisor)
+        ->post(route('placements.final-assessments.store', $placement), [])
+        ->assertForbidden();
+    $this->assertDatabaseCount('placement_assessments', 0);
+
+    $this->travelTo('2026-11-16 12:00:00');
+    $this->post(route('placements.final-assessments.store', $placement), [])
+        ->assertForbidden();
+    $this->assertDatabaseCount('placement_assessments', 0);
+});
+
+test('academic supervisors can submit their assessment on the first day of the final week', function () {
+    $this->travelTo('2026-11-09 12:00:00');
+    Storage::fake('local');
+    $supervisor = User::factory()->create(['role' => 'academic_supervisor']);
+    $student = User::factory()->create(['role' => 'student']);
+    $placement = Placement::create([
+        'student_id' => $student->id,
+        'academic_supervisor_id' => $supervisor->id,
+        'company_name' => 'Northstar Engineering',
+        'start_date' => '2026-11-02',
+        'end_date' => '2026-11-15',
+        'document_status' => 'approved',
+        'status' => 'active',
+    ]);
+
+    $this->actingAs($supervisor)
+        ->post(route('placements.final-assessments.store', $placement), [
+            'overall_score' => 92,
+            'physical_score' => 90,
+            'teams_score' => 94,
+            'feedback' => 'Excellent progress across the placement activities.',
+            'assessment_confirmed' => '1',
+            'faculty_report' => UploadedFile::fake()->create('faculty-report.pdf', 100, 'application/pdf'),
+        ])
+        ->assertRedirect();
+
+    $assessment = $placement->finalAssessments()->firstOrFail();
+    expect($assessment->overall_score)->toBe('92.00');
+    expect($assessment->physical_score)->toBe('90.00');
+    Storage::disk('local')->assertExists($assessment->faculty_report_path);
+});
+
 test('a student can submit a daily report for a scheduled workday', function () {
     $student = User::factory()->create();
     $start = now()->startOfWeek();

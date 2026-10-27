@@ -1,5 +1,6 @@
 <?php
 
+use App\Models\User;
 use Laravel\Fortify\Features;
 use Laravel\Jetstream\Jetstream;
 
@@ -11,7 +12,8 @@ test('registration screen can be rendered', function () {
         ->assertSee('attachify-logo-title', false)
         ->assertDontSee('#6875F5', false)
         ->assertSee('Field supervisor')
-        ->assertSee('Academic supervisor');
+        ->assertSee('Academic supervisor')
+        ->assertSee('Year of study');
 })->skip(function () {
     return ! Features::enabled(Features::registration());
 }, 'Registration support is not enabled.');
@@ -32,6 +34,7 @@ test('new users can register', function () {
         'course' => 'Civil Engineering',
         'registration_number' => 'REG-2026-01',
         'student_number' => 'STU-2026-01',
+        'year_of_study' => '3',
         'password' => 'password',
         'password_confirmation' => 'password',
         'terms' => Jetstream::hasTermsAndPrivacyPolicyFeature(),
@@ -44,6 +47,7 @@ test('new users can register', function () {
         'course' => 'Civil Engineering',
         'registration_number' => 'REG-2026-01',
         'student_number' => 'STU-2026-01',
+        'year_of_study' => 3,
         'verification_status' => 'pending',
     ]);
     $response->assertRedirect(route('dashboard', absolute: false));
@@ -106,9 +110,34 @@ test('student registration requires course and both student identifiers', functi
         'password' => 'password',
         'password_confirmation' => 'password',
     ])->assertRedirect('/register')
-        ->assertSessionHasErrors(['course', 'registration_number', 'student_number']);
+        ->assertSessionHasErrors(['course', 'registration_number', 'student_number', 'year_of_study']);
 
     $this->assertDatabaseMissing('users', ['email' => 'missing-details@example.com']);
 })->skip(function () {
     return ! Features::enabled(Features::registration());
 }, 'Registration support is not enabled.');
+
+test('students can update their year of study with their other identifiers', function () {
+    $student = User::factory()->create([
+        'role' => 'student',
+        'course' => 'Civil Engineering',
+        'registration_number' => 'REG-2026-UPDATE',
+        'student_number' => 'STU-2026-UPDATE',
+        'year_of_study' => 2,
+    ]);
+
+    $this->actingAs($student)
+        ->put(route('student.identity.update'), [
+            'course' => 'Civil Engineering',
+            'registration_number' => 'REG-2026-UPDATE',
+            'student_number' => 'STU-2026-UPDATE',
+            'year_of_study' => '3',
+        ])
+        ->assertRedirect();
+
+    $this->assertDatabaseHas('users', [
+        'id' => $student->id,
+        'year_of_study' => 3,
+        'verification_status' => 'pending',
+    ]);
+});

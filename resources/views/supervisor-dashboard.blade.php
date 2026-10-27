@@ -212,7 +212,7 @@
                     @endforeach
 
                     @unless ($placement->finalAssessments->contains('supervisor_id', auth()->id()))
-                        @if (auth()->user()->role === 'academic_supervisor' || ($placement->start_date && $placement->end_date && today()->between($placement->start_date, $placement->end_date)))
+                        @if ((auth()->user()->role === 'academic_supervisor' && $placement->isWithinAcademicAssessmentWindow()) || (auth()->user()->role === 'field_supervisor' && $placement->start_date && $placement->end_date && today()->between($placement->start_date, $placement->end_date)))
                             <form method="POST" action="{{ route('placements.final-assessments.store', $placement) }}" enctype="multipart/form-data" class="mt-3 grid max-w-xl gap-3">
                                 @csrf
                                 <label class="grid gap-1 text-xs font-semibold">Overall mark (0–100)
@@ -236,7 +236,7 @@
                                 <button class="attachify-primary-action justify-self-start">Submit final assessment</button>
                             </form>
                         @else
-                            <p class="mt-2 text-sm text-gray-600">Field supervisor final marks can be submitted during the placement dates.</p>
+                            <p class="mt-2 text-sm text-gray-600">{{ auth()->user()->role === 'academic_supervisor' ? 'Academic final assessments are available during the final 7 days of the registered placement period.' : 'Field supervisor final marks can be submitted during the placement dates.' }}</p>
                         @endif
                     @endunless
                 </div>

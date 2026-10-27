@@ -22,7 +22,7 @@
         @endif
         <details class="attachify-panel mb-5" id="student-details">
             <summary class="cursor-pointer font-semibold">Review or update your student identifiers</summary>
-            <form method="POST" action="{{ route('student.identity.update') }}" class="mt-4 grid gap-3 md:grid-cols-3">
+            <form method="POST" action="{{ route('student.identity.update') }}" class="mt-4 grid gap-3 md:grid-cols-4">
                 @csrf
                 @method('PUT')
                 <label class="grid gap-1 text-xs font-semibold">Course / programme
@@ -34,7 +34,15 @@
                 <label class="grid gap-1 text-xs font-semibold">Student number
                     <input name="student_number" value="{{ old('student_number', auth()->user()->student_number) }}" required maxlength="100" class="rounded border-gray-300 text-sm">
                 </label>
-                <button class="attachify-primary-action justify-self-start md:col-span-3">Save student details</button>
+                <label class="grid gap-1 text-xs font-semibold">Year of study
+                    <select name="year_of_study" required class="rounded border-gray-300 text-sm">
+                        <option value="">Select your year</option>
+                        @foreach (range(1, 6) as $year)
+                            <option value="{{ $year }}" @selected((string) old('year_of_study', auth()->user()->year_of_study) === (string) $year)>Year {{ $year }}</option>
+                        @endforeach
+                    </select>
+                </label>
+                <button class="attachify-primary-action justify-self-start md:col-span-4">Save student details</button>
             </form>
         </details>
         @if ($notifications->isNotEmpty())

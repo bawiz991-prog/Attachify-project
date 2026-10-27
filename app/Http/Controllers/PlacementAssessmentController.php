@@ -30,6 +30,12 @@ class PlacementAssessmentController extends Controller
                 403,
                 'Field supervisor final assessments are available during the placement period only.'
             );
+        } elseif ($user->role === 'academic_supervisor') {
+            abort_unless(
+                $placement->isWithinAcademicAssessmentWindow(),
+                403,
+                'Academic final assessments are available during the final 7 days of the registered placement period.'
+            );
         }
         abort_if($placement->finalAssessments()->where('supervisor_id', $user->id)->exists(), 409, 'A final assessment has already been submitted.');
 

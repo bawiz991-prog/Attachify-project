@@ -155,6 +155,7 @@ test('only the assigned academic supervisor can schedule meetings and both parti
 });
 
 test('academic final assessment publishes a private PDF report and hides scores from students', function () {
+    $this->travelTo('2027-01-23 12:00:00');
     Storage::fake('local');
     $academic = User::factory()->create(['role' => 'academic_supervisor']);
     $student = User::factory()->create(['role' => 'student']);
@@ -273,6 +274,7 @@ test('students can correct identifiers and are returned to the administrator rev
         'course' => 'Old course',
         'registration_number' => 'REG-OLD',
         'student_number' => 'STU-OLD',
+        'year_of_study' => 2,
         'verification_status' => 'rejected',
         'verification_notes' => 'Please confirm the identifiers.',
     ]);
@@ -281,6 +283,7 @@ test('students can correct identifiers and are returned to the administrator rev
         'course' => 'Information Technology',
         'registration_number' => 'REG-NEW',
         'student_number' => 'STU-NEW',
+        'year_of_study' => '3',
     ])->assertRedirect();
 
     expect($student->fresh())
