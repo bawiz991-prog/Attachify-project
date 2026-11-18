@@ -33,6 +33,6 @@ class SupportController extends Controller
             'user_id' => $request->user()?->id,
         ]);
 
-        return back()->with('status', 'Your message has been sent to the Attachify support team.');
+        return back()->with('status', 'Your message has been sent to the SIMS support team.');
     }
 }

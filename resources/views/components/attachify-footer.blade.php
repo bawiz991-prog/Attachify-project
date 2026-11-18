@@ -1,9 +1,9 @@
 <footer class="attachify-footer">
     <div class="attachify-footer-inner">
-        <a href="{{ url('/') }}" aria-label="ATTACHIFY home">
+        <a href="{{ url('/') }}" aria-label="SIMS home">
             <x-attachify-logo class="attachify-footer-logo" />
         </a>
-        <p>© {{ now()->year }} ATTACHIFY. Every workday, accounted for.</p>
+        <p>© {{ now()->year }} SIMS. Every workday, accounted for.</p>
         @auth
             <div class="flex flex-wrap items-center gap-4">
                 <a href="{{ route('help') }}">Help</a>

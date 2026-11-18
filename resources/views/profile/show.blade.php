@@ -7,6 +7,10 @@
 
     <div>
         <div class="max-w-7xl mx-auto py-10 sm:px-6 lg:px-8">
+            <div class="mb-8 max-w-2xl">
+                <x-profile-photo-manager />
+            </div>
+
             @if (Laravel\Fortify\Features::canUpdateProfileInformation())
                 @livewire('profile.update-profile-information-form')
 

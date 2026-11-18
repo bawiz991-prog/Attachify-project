@@ -16,6 +16,7 @@ class PlacementAssessment extends Model
         'teams_score',
         'feedback',
         'faculty_report_path',
+        'coordinator_forwarded_at',
         'submitted_at',
     ];
 
@@ -25,6 +26,7 @@ class PlacementAssessment extends Model
             'overall_score' => 'decimal:2',
             'physical_score' => 'decimal:2',
             'teams_score' => 'decimal:2',
+            'coordinator_forwarded_at' => 'datetime',
             'submitted_at' => 'datetime',
         ];
     }

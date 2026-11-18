@@ -13,7 +13,13 @@ class DailyReportController extends Controller
     public function store(Request $request, Placement $placement): RedirectResponse
     {
         abort_unless($placement->student_id === $request->user()->id, 403);
-        abort_unless($request->user()->isApproved() && $placement->document_status === 'approved', 403, 'Your account and placement documents must be approved before submitting daily reports.');
+        abort_unless(
+            $request->user()->isApproved()
+                && $placement->document_status === 'approved'
+                && in_array($placement->faculty_review_status, [null, 'approved'], true),
+            403,
+            'Your account and placement must be approved by the faculty before submitting daily reports.'
+        );
 
         $validated = $request->validate([
             'report_date' => ['required', 'date', 'after_or_equal:'.CarbonImmutable::parse($placement->start_date)->toDateString(), 'before_or_equal:'.CarbonImmutable::parse($placement->end_date)->toDateString(), 'before_or_equal:today'],
@@ -50,13 +56,11 @@ class DailyReportController extends Controller
             'submitted_at' => now(),
         ]);
 
-        foreach ([$placement->fieldSupervisor, $placement->academicSupervisor] as $supervisor) {
-            $supervisor?->notify(new WorkspaceNotice(
-                'New daily report',
-                $request->user()->name.' submitted a daily report for '.$reportDate->format('M j, Y').'.',
-                ['placement_id' => $placement->id],
-            ));
-        }
+        $placement->fieldSupervisor?->notify(new WorkspaceNotice(
+            'New daily report awaiting approval',
+            $request->user()->name.' submitted a daily report for '.$reportDate->format('M j, Y').'.',
+            ['placement_id' => $placement->id],
+        ));
 
         return redirect()->route('dashboard')->with('status', 'Your daily report has been submitted.');
     }

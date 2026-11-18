@@ -24,6 +24,21 @@ test('registration screen cannot be rendered if support is disabled', function (
     return Features::enabled(Features::registration());
 }, 'Registration support is enabled.');
 
+test('public registration is disabled', function () {
+    $this->post('/register', [
+        'name' => 'Unauthorised Account',
+        'email' => 'student@mubs.ac.ug',
+        'role' => 'student',
+        'course' => 'Bachelor of Commerce',
+        'registration_number' => 'REG-NEW-1',
+        'student_number' => 'STU-NEW-1',
+        'password' => 'password',
+        'password_confirmation' => 'password',
+    ])->assertNotFound();
+
+    $this->assertDatabaseMissing('users', ['email' => 'student@mubs.ac.ug']);
+});
+
 test('new users can register', function () {
     $response = $this->post('/register', [
         'name' => 'Test User',

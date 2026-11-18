@@ -1,7 +1,7 @@
 <x-guest-layout>
     <x-authentication-card>
         <x-slot name="logo"><x-authentication-card-logo /></x-slot>
-        <p class="attachify-eyebrow">ATTACHIFY / SUPPORT</p>
+        <p class="attachify-eyebrow">SIMS / SUPPORT</p>
         <h1 class="mt-2 text-2xl font-bold text-gray-900">Contact us</h1>
         <p class="mt-2 text-sm text-gray-600">Send a message to the support team. Signed-in accounts will receive replies in their notifications.</p>
         @if (session('status'))

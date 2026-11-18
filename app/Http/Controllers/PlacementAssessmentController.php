@@ -30,6 +30,21 @@ class PlacementAssessmentController extends Controller
                 403,
                 'Field supervisor final assessments are available during the placement period only.'
             );
+        } else {
+            abort_unless(
+                $placement->end_date && today()->greaterThan($placement->end_date),
+                403,
+                'Academic final marks are submitted after the placement period ends.'
+            );
+            abort_unless(
+                $placement->field_supervisor_id
+                    && $placement->finalAssessments()
+                        ->where('supervisor_role', 'field_supervisor')
+                        ->where('supervisor_id', $placement->field_supervisor_id)
+                        ->exists(),
+                403,
+                'The field supervisor must submit their final assessment before academic final marks can be submitted.'
+            );
         }
         abort_if($placement->finalAssessments()->where('supervisor_id', $user->id)->exists(), 409, 'A final assessment has already been submitted.');
 
@@ -73,6 +88,15 @@ class PlacementAssessmentController extends Controller
                 'Your academic supervisor uploaded your final faculty assessment report.',
                 ['placement_id' => $placement->id],
             ));
+            $coordinator = \App\Models\Program::query()
+                ->where('name', $placement->student->course)
+                ->with('coordinator')
+                ->first()?->coordinator;
+            $coordinator?->notify(new WorkspaceNotice(
+                'Final assessment ready for faculty forwarding',
+                'The final assessment for '.$placement->student->name.' is ready for your review.',
+                ['placement_id' => $placement->id, 'assessment_id' => $assessment->id],
+            ));
         } elseif ($placement->academicSupervisor) {
             $placement->academicSupervisor->notify(new WorkspaceNotice(
                 'Field supervisor final assessment',
@@ -89,7 +113,8 @@ class PlacementAssessmentController extends Controller
         abort_unless($request->user()->role === 'admin'
             || $placement->student_id === $request->user()->id
             || $placement->academic_supervisor_id === $request->user()->id
-            || $placement->field_supervisor_id === $request->user()->id, 403);
+            || $placement->field_supervisor_id === $request->user()->id
+            || ($request->user()->role === 'coordinator' && $request->user()->course === $placement->student->course), 403);
 
         $assessment = $placement->finalAssessments()
             ->where('supervisor_role', 'academic_supervisor')

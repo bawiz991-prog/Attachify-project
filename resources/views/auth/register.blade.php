@@ -4,83 +4,13 @@
             <x-authentication-card-logo />
         </x-slot>
 
-        <x-validation-errors class="mb-4" />
-
-        <form method="POST" action="{{ route('register') }}" x-data="{ role: '{{ old('role', 'student') }}' }">
-            @csrf
-
-            <div>
-                <x-label for="role" value="{{ __('I am registering as') }}" />
-                <select id="role" name="role" x-model="role" class="block mt-1 w-full border-gray-300 focus:border-indigo-500 focus:ring-indigo-500 rounded-md shadow-sm" required>
-                    <option value="student" @selected(old('role', 'student') === 'student')>Student</option>
-                    <option value="field_supervisor" @selected(old('role') === 'field_supervisor')>Field supervisor</option>
-                    <option value="academic_supervisor" @selected(old('role') === 'academic_supervisor')>Academic supervisor</option>
-                </select>
-                <p class="mt-1 text-xs text-gray-500">Academic supervisors should use their school email. Field supervisors should use the work email shared with the student.</p>
-            </div>
-
-            <div x-show="role === 'student'" x-cloak>
-                <div class="mt-4">
-                    <x-label for="course" value="{{ __('Course / programme') }}" />
-                    <x-input id="course" class="block mt-1 w-full" type="text" name="course" :value="old('course')" x-bind:required="role === 'student'" autocomplete="organization-title" />
-                </div>
-                <div class="mt-4">
-                    <x-label for="registration_number" value="{{ __('Registration number') }}" />
-                    <x-input id="registration_number" class="block mt-1 w-full" type="text" name="registration_number" :value="old('registration_number')" x-bind:required="role === 'student'" />
-                </div>
-                <div class="mt-4">
-                    <x-label for="student_number" value="{{ __('Student number') }}" />
-                    <x-input id="student_number" class="block mt-1 w-full" type="text" name="student_number" :value="old('student_number')" x-bind:required="role === 'student'" />
-                </div>
-                <p class="mt-2 text-xs text-gray-500">Student details are reviewed by an ATTACHIFY administrator before placement tools are enabled.</p>
-            </div>
-
-            <div>
-                <x-label for="name" value="{{ __('Name') }}" />
-                <x-input id="name" class="block mt-1 w-full" type="text" name="name" :value="old('name')" required autofocus autocomplete="name" />
-            </div>
-
-            <div class="mt-4">
-                <x-label for="email" value="{{ __('Email') }}" />
-                <x-input id="email" class="block mt-1 w-full" type="email" name="email" :value="old('email')" required autocomplete="username" />
-            </div>
-
-            <div class="mt-4">
-                <x-label for="password" value="{{ __('Password') }}" />
-                <x-input id="password" class="block mt-1 w-full" type="password" name="password" required autocomplete="new-password" />
-            </div>
-
-            <div class="mt-4">
-                <x-label for="password_confirmation" value="{{ __('Confirm Password') }}" />
-                <x-input id="password_confirmation" class="block mt-1 w-full" type="password" name="password_confirmation" required autocomplete="new-password" />
-            </div>
-
-            @if (Laravel\Jetstream\Jetstream::hasTermsAndPrivacyPolicyFeature())
-                <div class="mt-4">
-                    <x-label for="terms">
-                        <div class="flex items-center">
-                            <x-checkbox name="terms" id="terms" required />
-
-                            <div class="ms-2">
-                                {!! __('I agree to the :terms_of_service and :privacy_policy', [
-                                        'terms_of_service' => '<a target="_blank" href="'.route('terms.show').'" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">'.__('Terms of Service').'</a>',
-                                        'privacy_policy' => '<a target="_blank" href="'.route('policy.show').'" class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500">'.__('Privacy Policy').'</a>',
-                                ]) !!}
-                            </div>
-                        </div>
-                    </x-label>
-                </div>
-            @endif
-
-            <div class="flex items-center justify-end mt-4">
-                <a class="underline text-sm text-gray-600 hover:text-gray-900 rounded-md focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-indigo-500" href="{{ route('login') }}">
-                    {{ __('Already registered?') }}
-                </a>
-
-                <x-button class="ms-4">
-                    {{ __('Register') }}
-                </x-button>
-            </div>
-        </form>
+        <div class="space-y-4 text-sm text-gray-700">
+            <h1 class="text-xl font-semibold text-gray-900">SIMS accounts are provisioned by an administrator</h1>
+            <p>Students, academic supervisors, and coordinators should contact their faculty or a SIMS administrator to request an account.</p>
+            <p>Field supervisors receive an invitation link from an administrator.</p>
+            <a class="inline-flex rounded bg-green-900 px-4 py-2 font-semibold text-white" href="{{ route('login') }}">
+                Sign in
+            </a>
+        </div>
     </x-authentication-card>
 </x-guest-layout>

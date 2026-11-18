@@ -4,8 +4,8 @@
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1">
     <meta name="theme-color" content="#f4f2e9">
-    <meta name="description" content="ATTACHIFY keeps internship placements, daily reports and supervisor feedback connected.">
-    <title>{{ config('app.name', 'ATTACHIFY') }}</title>
+    <meta name="description" content="SIMS keeps internship placements, daily reports and supervisor feedback connected.">
+    <title>{{ config('app.name', 'SIMS') }}</title>
     <link rel="preconnect" href="https://fonts.googleapis.com">
     <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
     <link href="https://fonts.googleapis.com/css2?family=Chewy&family=DM+Sans:wght@400;500;600;700&family=Manrope:wght@400;500;600;700;800&display=swap" rel="stylesheet">
@@ -142,7 +142,7 @@
 <body>
 <div class="attachify-page">
     <header class="attachify-shell attachify-header">
-        <a class="attachify-brand" href="{{ url('/') }}" aria-label="ATTACHIFY home">
+        <a class="attachify-brand" href="{{ url('/') }}" aria-label="SIMS home">
             <x-attachify-logo class="attachify-site-logo" />
         </a>
         <nav class="attachify-nav" aria-label="Main navigation">
@@ -154,7 +154,7 @@
                 <a class="attachify-nav-cta" href="{{ route('dashboard') }}">Open workspace <span class="attachify-arrow" aria-hidden="true">&#8599;</span></a>
             @else
                 <a href="{{ route('login') }}">Log in</a>
-                <a class="attachify-nav-cta" href="{{ route('register') }}">Create account <span class="attachify-arrow" aria-hidden="true">&#8599;</span></a>
+                <a class="attachify-nav-cta" href="{{ route('login') }}">Sign in <span class="attachify-arrow" aria-hidden="true">&#8599;</span></a>
             @endauth
         </nav>
         <details class="attachify-mobile-menu">
@@ -169,7 +169,7 @@
                     <a href="{{ route('notifications.index') }}">Notifications</a>
                 @else
                     <a href="{{ route('login') }}">Log in</a>
-                    <a href="{{ route('register') }}">Create account</a>
+                    <a href="{{ route('login') }}">Sign in</a>
                 @endauth
             </div>
         </details>
@@ -183,7 +183,7 @@
                 <p class="attachify-hero-copy">One shared space for students and supervisors to follow an internship from the acceptance letter to the final evaluation.</p>
                 <div class="attachify-actions">
                     @guest
-                        <a class="attachify-button" href="{{ route('register') }}">Start as a student <span class="attachify-arrow" aria-hidden="true">&#8594;</span></a>
+                        <a class="attachify-button" href="{{ route('login') }}">Student? Sign in with your university account <span class="attachify-arrow" aria-hidden="true">&#8594;</span></a>
                         <a class="attachify-button attachify-button-light" href="#process">See how it works</a>
                     @else
                         <a class="attachify-button" href="{{ route('dashboard') }}">Go to your workspace <span class="attachify-arrow" aria-hidden="true">&#8594;</span></a>
@@ -214,33 +214,33 @@
         <section class="attachify-shell attachify-process" id="process" aria-labelledby="process-title">
             <div class="attachify-process-heading">
                 <h2 id="process-title">A familiar process, better connected.</h2>
-                <p>Your faculty’s placement-letter process stays as it is. ATTACHIFY picks up when the company confirms your placement.</p>
+                <p>Register your internship once, verify the details with your faculty, and follow the dean’s review through to approval.</p>
             </div>
             <div class="attachify-steps">
                 <article class="attachify-step attachify-step-native">
-                    <div class="attachify-step-number">BEFORE ATTACHIFY</div>
-                    <h3>Request your letter</h3>
-                    <p>Write to your faculty and get the dean’s signature through the existing process.</p>
+                    <div class="attachify-step-number">PREPARE</div>
+                    <h3>Get your letters</h3>
+                    <p>Collect the company acceptance and signed faculty application letters.</p>
                 </article>
                 <article class="attachify-step">
                     <div class="attachify-step-number">01</div>
-                    <h3>Confirm placement</h3>
-                    <p>Upload the acceptance letter from your company.</p>
+                    <h3>Register your internship</h3>
+                    <p>Submit your organization, dates, work schedule, and both supporting letters.</p>
                 </article>
                 <article class="attachify-step">
                     <div class="attachify-step-number">02</div>
-                    <h3>Set your schedule</h3>
-                    <p>Register the days and hours you’ll work during attachment.</p>
+                    <h3>Verify with your faculty</h3>
+                    <p>Confirm the details when your faculty handler asks, or request a correction.</p>
                 </article>
                 <article class="attachify-step">
                     <div class="attachify-step-number">03</div>
-                    <h3>Record each day</h3>
-                    <p>Write daily reports for the workdays in your schedule.</p>
+                    <h3>Get the dean’s decision</h3>
+                    <p>Your faculty dean completes the final placement review.</p>
                 </article>
                 <article class="attachify-step">
                     <div class="attachify-step-number">04</div>
-                    <h3>Review progress</h3>
-                    <p>Share your progress with both supervisors for feedback.</p>
+                    <h3>Record each day</h3>
+                    <p>Once approved, submit daily reports and share progress with your supervisors.</p>
                 </article>
             </div>
         </section>
@@ -260,8 +260,8 @@
                 <article class="attachify-supervisor">
                     <div class="attachify-supervisor-index">From the faculty</div>
                     <h3>Academic supervisor</h3>
-                    <p>Faculty-assigned supervisors register with school email. Students add the supervisor listed for them by the faculty.</p>
-                    <span class="attachify-meeting-tag">Microsoft Teams</span>
+                    <p>Faculty-assigned academic supervisors receive SIMS accounts from an administrator. Students work with the supervisor assigned by their faculty.</p>
+                    <span class="attachify-meeting-tag">Google Meet</span>
                     <span class="attachify-meeting-tag">In person</span>
                 </article>
             </div>

@@ -9,6 +9,22 @@ use Illuminate\Http\Request;
 
 class SupervisorMeetingController extends Controller
 {
+    public function complete(Request $request, Placement $placement, \App\Models\SupervisorMeeting $meeting): RedirectResponse
+    {
+        abort_unless($meeting->placement_id === $placement->id, 404);
+        abort_unless(
+            $request->user()->role === 'academic_supervisor'
+                && $placement->academic_supervisor_id === $request->user()->id,
+            403,
+        );
+        abort_unless($meeting->mode === 'google_meet' && $meeting->starts_at->isPast(), 422);
+        abort_unless($meeting->status === 'scheduled', 409, 'This meeting has already been completed.');
+
+        $meeting->forceFill(['status' => 'completed'])->save();
+
+        return back()->with('status', 'The Google Meet supervision was marked complete.');
+    }
+
     public function store(Request $request, Placement $placement): RedirectResponse
     {
         abort_unless(
@@ -19,10 +35,16 @@ class SupervisorMeetingController extends Controller
         abort_unless($request->user()->isApproved() && $placement->document_status === 'approved', 403);
 
         $validated = $request->validate([
-            'mode' => ['required', 'in:teams,in_person'],
+            'mode' => ['required', 'in:google_meet,in_person'],
             'starts_at' => ['required', 'date', 'after:now'],
             'ends_at' => ['required', 'date', 'after:starts_at'],
-            'teams_url' => ['required_if:mode,teams', 'nullable', 'url', 'max:2000'],
+            'teams_url' => [
+                'required_if:mode,google_meet',
+                'nullable',
+                'url',
+                'max:2000',
+                'regex:/^https:\/\/meet\.google\.com\//i',
+            ],
             'location' => ['required_if:mode,in_person', 'nullable', 'string', 'max:1000'],
             'notes' => ['nullable', 'string', 'max:2000'],
         ]);
@@ -34,8 +56,8 @@ class SupervisorMeetingController extends Controller
             'status' => 'scheduled',
         ]);
 
-        $message = $meeting->mode === 'teams'
-            ? 'A Microsoft Teams meeting'
+        $message = $meeting->mode === 'google_meet'
+            ? 'A Google Meet assessment'
             : 'An in-person meeting';
 
         foreach ([$placement->student, $placement->fieldSupervisor] as $participant) {

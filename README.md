@@ -7,7 +7,7 @@
 <a href="https://packagist.org/packages/laravel/framework"><img src="https://img.shields.io/packagist/l/laravel/framework" alt="License"></a>
 </p>
 
-## Running Attachify with XAMPP
+## Running SIMS with XAMPP
 
 The project's Laravel migrations are in `database/migrations`. To create the
 tables in your local XAMPP MySQL database:
@@ -48,11 +48,22 @@ tables in your local XAMPP MySQL database:
    If `php` is not on your PATH, use XAMPP's PHP executable instead:
    `& C:\xampp\php\php.exe artisan migrate` (and the same executable for other
    Artisan commands).
-   To create the first administrator, register an account normally, then
-   promote it from PowerShell with `php artisan attachify:make-admin
-   admin@example.com`. Confirm the prompt. Administrators approve student and
-   supervisor accounts and check both placement PDFs before daily reporting
-   starts.
+   To create the first administrator, run `php artisan sims:make-admin
+   admin@example.com`. Set the administrator's name and password at the prompts.
+   Run `php artisan storage:link` so uploaded profile photos can be displayed.
+   Public registration is disabled. Administrators create student and supervisor
+   accounts; students must use an `@mubs.ac.ug` email address. New accounts use
+   the temporary password `password`, must change it at first sign-in, and must
+   activate the account using the email link. Configure SMTP in `.env` before
+   provisioning users; the example environment logs outgoing email locally.
+   Students select their course and faculty, along with their student identifiers,
+   from the dashboard; faculty handlers or faculty deans review those details
+   before placement registration is enabled.
+   Administrators can deactivate and reactivate non-admin accounts from the
+   account review list; deactivation blocks access but keeps account history.
+   Academic supervisors can schedule Google Meet sessions by providing a
+   `https://meet.google.com/` link; participants receive a workspace
+   notification and can join from their dashboards.
 5. Install Node.js LTS (which includes npm), then build the frontend assets:
 
    ```powershell

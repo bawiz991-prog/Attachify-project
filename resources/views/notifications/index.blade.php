@@ -1,7 +1,7 @@
 <x-app-layout>
     <x-slot name="header">
         <div class="attachify-workspace-heading">
-            <div><p class="attachify-eyebrow">ATTACHIFY / UPDATES</p><h1>Notifications</h1></div>
+            <div><p class="attachify-eyebrow">SIMS / UPDATES</p><h1>Notifications</h1></div>
             <a href="{{ route('dashboard') }}" class="attachify-back-link">Back to workspace</a>
         </div>
     </x-slot>
@@ -10,8 +10,11 @@
             @forelse ($notifications as $notification)
                 <article class="flex flex-wrap items-start justify-between gap-4 border-b border-gray-200 py-4 last:border-0">
                     <div>
-                        <p class="font-semibold text-gray-900">{{ $notification->data['title'] ?? 'ATTACHIFY update' }} @unless($notification->read_at)<span class="text-xs font-medium text-green-800">New</span>@endunless</p>
+                        <p class="font-semibold text-gray-900">{{ $notification->data['title'] ?? 'SIMS update' }} @unless($notification->read_at)<span class="text-xs font-medium text-green-800">New</span>@endunless</p>
                         <p class="mt-1 whitespace-pre-line text-sm text-gray-600">{{ $notification->data['message'] ?? '' }}</p>
+                        @if (! empty($notification->data['placement_id']))
+                            <a class="mt-2 inline-block text-sm font-semibold text-green-800 underline" href="{{ route('dashboard') }}">Open related placement</a>
+                        @endif
                         <time class="mt-2 block text-xs text-gray-500">{{ $notification->created_at->format('M j, Y g:i A') }}</time>
                     </div>
                     @unless($notification->read_at)

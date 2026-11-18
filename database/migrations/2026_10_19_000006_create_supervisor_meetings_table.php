@@ -13,7 +13,7 @@ return new class extends Migration
             $table->foreignId('placement_id')->constrained()->cascadeOnDelete();
             $table->foreignId('supervisor_id')->nullable()->constrained('users')->nullOnDelete();
             $table->foreignId('scheduled_by_id')->nullable()->constrained('users')->nullOnDelete();
-            $table->string('mode')->default('teams');
+            $table->string('mode')->default('google_meet');
             $table->timestamp('starts_at');
             $table->timestamp('ends_at')->nullable();
             $table->text('teams_url')->nullable();

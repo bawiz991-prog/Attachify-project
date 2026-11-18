@@ -2,10 +2,12 @@
     <x-slot name="header">
         <div class="attachify-workspace-heading">
             <div>
-                <p class="attachify-eyebrow">ATTACHIFY / SUPERVISOR WORKSPACE</p>
+                <p class="attachify-eyebrow">SIMS / SUPERVISOR WORKSPACE</p>
                 <h1>{{ auth()->user()->role === 'field_supervisor' ? 'Field supervisor' : 'Academic supervisor' }}</h1>
             </div>
-            <span class="attachify-role-label">Supervisor</span>
+            <div class="flex flex-wrap items-center justify-end gap-3">
+                <span class="attachify-role-label">Supervisor</span>
+            </div>
         </div>
     </x-slot>
 
@@ -16,14 +18,14 @@
         @if ($notifications->isNotEmpty())
             <section class="attachify-panel mb-5">
                 <div class="flex items-center justify-between gap-3"><h2 class="font-semibold">New updates</h2><a class="text-sm font-semibold text-green-800 underline" href="{{ route('notifications.index') }}">All notifications</a></div>
-                @foreach ($notifications as $notification)<p class="mt-2 text-sm"><strong>{{ $notification->data['title'] ?? 'ATTACHIFY update' }}:</strong> {{ $notification->data['message'] ?? '' }}</p>@endforeach
+                @foreach ($notifications as $notification)<p class="mt-2 text-sm"><strong>{{ $notification->data['title'] ?? 'SIMS update' }}:</strong> {{ $notification->data['message'] ?? '' }}</p>@endforeach
             </section>
         @endif
         <section class="attachify-panel">
             <p class="attachify-eyebrow">ACCOUNT READY</p>
             <h2 class="mt-2 font-semibold text-xl text-gray-800">Welcome, {{ auth()->user()->name }}.</h2>
             @if (auth()->user()->role === 'field_supervisor')
-                <p class="attachify-panel-copy">Your field supervisor account is ready. Share this registered work email with your student so they can connect you to their placement.</p>
+                <p class="attachify-panel-copy">Your field supervisor account is ready. Accept an administrator-approved invitation link to connect to each assigned student placement.</p>
                 <div class="mt-5 border-t border-gray-200 pt-4">
                     <p class="attachify-eyebrow">YOUR REGISTERED WORK EMAIL</p>
                     <p class="mt-1 text-sm font-medium text-gray-800">{{ auth()->user()->email }}</p>
@@ -86,10 +88,14 @@
                                                     </div>
                                                 @endforeach
                                             @endif
-                                            @unless ($report->assessments->contains('supervisor_id', auth()->id()))
+                                            @if (
+                                                (auth()->user()->role === 'field_supervisor' && $report->status === 'submitted'
+                                                    || auth()->user()->role === 'academic_supervisor' && $report->status === 'field_approved')
+                                                && ! $report->assessments->contains('supervisor_id', auth()->id())
+                                            )
                                                 <form method="POST" action="{{ route('reports.assessments.store', [$placement, $report]) }}" class="attachify-assessment-form">
                                                     @csrf
-                                                    <h4>Assess this submitted report</h4>
+                                                    <h4>{{ auth()->user()->role === 'field_supervisor' ? 'Approve this daily activity' : 'Review field-approved activity' }}</h4>
                                                     <div class="attachify-assessment-fields">
                                                         <div>
                                                             <label for="rating-{{ $report->id }}">Overall progress</label>
@@ -120,7 +126,7 @@
                                                         <button class="attachify-primary-action" type="submit">Submit assessment <span aria-hidden="true">&#8594;</span></button>
                                                     </div>
                                                 </form>
-                                            @endunless
+                                            @endif
                                         </article>
                                     @endforeach
                                 </div>
@@ -164,10 +170,16 @@
                         <h3 class="font-semibold">Meetings with student and field supervisor</h3>
                         @forelse ($placement->meetings as $meeting)
                             <article class="mt-2 rounded bg-gray-50 p-3 text-sm">
-                                <p><strong>{{ $meeting->starts_at->format('D, M j, Y g:i A') }}</strong> · {{ $meeting->mode === 'teams' ? 'Microsoft Teams' : 'In person' }}</p>
+                                <p><strong>{{ $meeting->starts_at->format('D, M j, Y g:i A') }}</strong> · {{ $meeting->mode === 'google_meet' ? 'Google Meet' : 'In person' }}</p>
                                 <p>{{ $meeting->notes }}</p>
-                                @if ($meeting->teams_url)<a href="{{ $meeting->teams_url }}" target="_blank" rel="noopener noreferrer" class="font-semibold text-green-800 underline">Open Teams meeting</a>@endif
+                                @if ($meeting->teams_url)<a href="{{ $meeting->teams_url }}" target="_blank" rel="noopener noreferrer" class="font-semibold text-green-800 underline">Open Google Meet</a>@endif
                                 @if ($meeting->location)<p>{{ $meeting->location }}</p>@endif
+                                @if (auth()->user()->role === 'academic_supervisor' && $meeting->mode === 'google_meet' && $meeting->status === 'scheduled' && $meeting->starts_at->isPast())
+                                    <form method="POST" action="{{ route('placements.meetings.complete', [$placement, $meeting]) }}" class="mt-2">
+                                        @csrf
+                                        <button class="rounded bg-green-800 px-3 py-2 text-xs font-semibold text-white">Mark Google Meet complete</button>
+                                    </form>
+                                @endif
                             </article>
                         @empty
                             <p class="mt-2 text-sm text-gray-600">No meetings have been scheduled.</p>
@@ -177,7 +189,7 @@
                             <form method="POST" action="{{ route('placements.meetings.store', $placement) }}" class="mt-3 grid gap-2">
                                 @csrf
                                 <label class="grid gap-1 text-xs font-semibold">Meeting type
-                                    <select name="mode" required class="rounded border-gray-300 text-sm"><option value="teams">Microsoft Teams</option><option value="in_person">In person</option></select>
+                                    <select name="mode" required class="rounded border-gray-300 text-sm"><option value="google_meet">Google Meet</option><option value="in_person">In person</option></select>
                                 </label>
                                 <label class="grid gap-1 text-xs font-semibold">Starts
                                     <input type="datetime-local" name="starts_at" required class="rounded border-gray-300 text-sm">
@@ -185,7 +197,7 @@
                                 <label class="grid gap-1 text-xs font-semibold">Ends
                                     <input type="datetime-local" name="ends_at" required class="rounded border-gray-300 text-sm">
                                 </label>
-                                <label class="grid gap-1 text-xs font-semibold">Teams meeting URL (required for Teams)
+                                <label class="grid gap-1 text-xs font-semibold">Google Meet URL (required for Google Meet)
                                     <input type="url" name="teams_url" class="rounded border-gray-300 text-sm">
                                 </label>
                                 <label class="grid gap-1 text-xs font-semibold">In-person location (required for in person)
@@ -205,7 +217,7 @@
                     @foreach ($placement->finalAssessments as $assessment)
                         <article class="mt-2 rounded bg-gray-50 p-3 text-sm">
                             <p><strong>{{ ucfirst(str_replace('_supervisor', ' supervisor', $assessment->supervisor_role)) }} · {{ $assessment->overall_score }}/100</strong></p>
-                            @if ($assessment->physical_score !== null)<p>Physical assessment: {{ $assessment->physical_score }}/100 · Teams assessment: {{ $assessment->teams_score }}/100</p>@endif
+                            @if ($assessment->physical_score !== null)<p>Physical assessment: {{ $assessment->physical_score }}/100 · Google Meet assessment: {{ $assessment->teams_score }}/100</p>@endif
                             <p>{{ $assessment->feedback }}</p>
                             @if ($assessment->faculty_report_path)<a href="{{ route('placements.faculty-report', $placement) }}" class="font-semibold text-green-800 underline">Download faculty report</a>@endif
                         </article>
@@ -213,6 +225,9 @@
 
                     @unless ($placement->finalAssessments->contains('supervisor_id', auth()->id()))
                         @if (auth()->user()->role === 'academic_supervisor' || ($placement->start_date && $placement->end_date && today()->between($placement->start_date, $placement->end_date)))
+                            @if (auth()->user()->role === 'academic_supervisor' && ($placement->end_date?->isFuture() || ! $placement->finalAssessments->contains('supervisor_role', 'field_supervisor')))
+                                <p class="mt-2 text-sm text-gray-600">Academic final marks are available after the placement ends and the field supervisor submits their final assessment.</p>
+                            @else
                             <form method="POST" action="{{ route('placements.final-assessments.store', $placement) }}" enctype="multipart/form-data" class="mt-3 grid max-w-xl gap-3">
                                 @csrf
                                 <label class="grid gap-1 text-xs font-semibold">Overall mark (0–100)
@@ -222,24 +237,59 @@
                                     <label class="grid gap-1 text-xs font-semibold">Physical assessment mark (0–100)
                                         <input type="number" name="physical_score" min="0" max="100" step="0.01" required class="rounded border-gray-300 text-sm">
                                     </label>
-                                    <label class="grid gap-1 text-xs font-semibold">Teams assessment mark (0–100)
+                                    <label class="grid gap-1 text-xs font-semibold">Google Meet assessment mark (0–100)
                                         <input type="number" name="teams_score" min="0" max="100" step="0.01" required class="rounded border-gray-300 text-sm">
                                     </label>
                                     <label class="grid gap-1 text-xs font-semibold">Faculty assessment report (PDF)
                                         <input type="file" name="faculty_report" accept="application/pdf,.pdf" required class="rounded border-gray-300 text-sm">
                                     </label>
-                                    <label class="flex items-start gap-2 text-xs text-gray-700"><input type="checkbox" name="assessment_confirmed" value="1" required class="mt-0.5 rounded border-gray-300">I completed the physical and Teams assessments and confirm these marks.</label>
+                                    <label class="flex items-start gap-2 text-xs text-gray-700"><input type="checkbox" name="assessment_confirmed" value="1" required class="mt-0.5 rounded border-gray-300">I completed the physical and Google Meet assessments and confirm these marks.</label>
                                 @endif
                                 <label class="grid gap-1 text-xs font-semibold">Assessment feedback
                                     <textarea name="feedback" rows="3" required minlength="10" maxlength="5000" class="rounded border-gray-300 text-sm"></textarea>
                                 </label>
                                 <button class="attachify-primary-action justify-self-start">Submit final assessment</button>
                             </form>
+                            @endif
                         @else
                             <p class="mt-2 text-sm text-gray-600">Field supervisor final marks can be submitted during the placement dates.</p>
                         @endif
                     @endunless
                 </div>
+                @if (auth()->user()->role === 'academic_supervisor')
+                    <div class="mt-6 border-t border-gray-200 pt-5">
+                        <h3 class="font-semibold">Student final report</h3>
+                        @if ($placement->final_report_template_path)
+                            <p class="mt-2 text-sm text-gray-600">Template sent {{ $placement->report_template_sent_at?->format('M j, Y') }}.</p>
+                        @endif
+                        <form method="POST" action="{{ route('placements.final-report-template.store', $placement) }}" enctype="multipart/form-data" class="mt-3 grid max-w-xl gap-3">
+                            @csrf
+                            <label class="grid gap-1 text-xs font-semibold">Send or replace final report template (PDF)
+                                <input type="file" name="template" accept="application/pdf,.pdf" required class="rounded border-gray-300 text-sm">
+                            </label>
+                            <button class="attachify-primary-action justify-self-start">Send template after online supervision</button>
+                        </form>
+                        @foreach ($placement->studentFinalReports as $finalReport)
+                            <article class="mt-4 rounded bg-gray-50 p-3 text-sm">
+                                <p class="font-semibold">Student report · {{ ucfirst(str_replace('_', ' ', $finalReport->status)) }} · {{ $finalReport->submitted_at->format('M j, Y') }}</p>
+                                <a class="mt-2 inline-block font-semibold text-green-800 underline" href="{{ route('final-reports.download', $finalReport) }}">Download student report</a>
+                                @if ($finalReport->reviewer_notes)<p class="mt-2">{{ $finalReport->reviewer_notes }}</p>@endif
+                                @if ($finalReport->status === 'pending')
+                                    <form method="POST" action="{{ route('final-reports.review', $finalReport) }}" class="mt-3 grid gap-2">
+                                        @csrf
+                                        <label class="grid gap-1 text-xs font-semibold">Examiner feedback
+                                            <textarea name="reviewer_notes" rows="3" required minlength="3" maxlength="3000" class="rounded border-gray-300 text-sm"></textarea>
+                                        </label>
+                                        <div class="flex gap-2">
+                                            <button name="decision" value="approved" class="rounded bg-green-800 px-3 py-2 text-xs font-semibold text-white">Approve</button>
+                                            <button name="decision" value="revision_requested" class="rounded border border-amber-400 px-3 py-2 text-xs font-semibold text-amber-900">Request corrections</button>
+                                        </div>
+                                    </form>
+                                @endif
+                            </article>
+                        @endforeach
+                    </div>
+                @endif
             </section>
         @endforeach
     </div>

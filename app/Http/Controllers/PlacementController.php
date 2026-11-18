@@ -4,74 +4,14 @@ namespace App\Http\Controllers;
 
 use App\Models\Placement;
 use App\Models\User;
+use App\Notifications\WorkspaceNotice;
 use Illuminate\Http\RedirectResponse;
 use Illuminate\Http\Request;
 use Illuminate\Support\Facades\DB;
-use Illuminate\View\View;
+use Illuminate\Validation\ValidationException;
 
 class PlacementController extends Controller
 {
-    public function create(): View
-    {
-        abort_unless(auth()->user()->role === 'student', 403);
-        abort_unless(auth()->user()->isApproved(), 403, 'Your account must be approved before you can set up a placement.');
-
-        return view('placements.create');
-    }
-
-    public function store(Request $request): RedirectResponse
-    {
-        abort_unless($request->user()->role === 'student', 403);
-        abort_unless($request->user()->isApproved(), 403, 'Your account must be approved before you can set up a placement.');
-        abort_if($request->user()->placements()->exists(), 403, 'A placement has already been created for your account.');
-
-        $validated = $request->validate([
-            'company_name' => ['required', 'string', 'max:255'],
-            'company_address' => ['nullable', 'string', 'max:2000'],
-            'acceptance_document' => ['required', 'file', 'mimes:pdf', 'max:10240'],
-            'placement_document' => ['required', 'file', 'mimes:pdf', 'max:10240'],
-            'start_date' => ['required', 'date'],
-            'end_date' => ['required', 'date', 'after_or_equal:start_date'],
-            'workdays' => ['required', 'array', 'min:1'],
-            'workdays.*' => ['required', 'integer', 'between:1,7'],
-            'start_time' => ['required', 'date_format:H:i'],
-            'end_time' => ['required', 'date_format:H:i', 'after:start_time'],
-        ]);
-
-        $documentPath = $request->file('acceptance_document')->store('acceptance-letters');
-        if (! $documentPath) {
-            throw new \RuntimeException('The company acceptance letter could not be stored. Please try again.');
-        }
-
-        $placementDocumentPath = $request->file('placement_document')->store('placement-letters');
-        if (! $placementDocumentPath) {
-            throw new \RuntimeException('The faculty placement letter could not be stored. Please try again.');
-        }
-
-        DB::transaction(function () use ($request, $validated, $documentPath, $placementDocumentPath) {
-            $placement = $request->user()->placements()->create([
-                'company_name' => $validated['company_name'],
-                'company_address' => $validated['company_address'] ?? null,
-                'acceptance_document_path' => $documentPath,
-                'placement_document_path' => $placementDocumentPath,
-                'start_date' => $validated['start_date'],
-                'end_date' => $validated['end_date'],
-                'status' => 'active',
-                'document_status' => 'pending',
-            ]);
-
-            foreach (array_unique($validated['workdays']) as $dayOfWeek) {
-                $placement->schedules()->create([
-                    'day_of_week' => $dayOfWeek,
-                    'start_time' => $validated['start_time'],
-                    'end_time' => $validated['end_time'],
-                ]);
-            }
-        });
-
-        return redirect()->route('dashboard')->with('status', 'Your placement details have been saved.');
-    }
-
     public function connectFieldSupervisor(Request $request, Placement $placement): RedirectResponse
     {
         abort_unless($placement->student_id === $request->user()->id, 403);
@@ -81,22 +21,29 @@ class PlacementController extends Controller
             'field_supervisor_email' => ['required', 'email', 'max:255'],
         ]);
 
-        $supervisor = User::query()
-            ->whereRaw('LOWER(email) = ?', [strtolower($validated['field_supervisor_email'])])
-            ->where('role', 'field_supervisor')
-            ->where('verification_status', 'approved')
-            ->first();
+        abort_if($placement->field_supervisor_id, 409, 'A field supervisor is already connected to this placement.');
+        abort_if($placement->field_supervisor_email, 409, 'A field-supervisor invitation has already been requested.');
+        abort_unless(in_array($placement->faculty_name, config('faculties'), true), 409, 'The placement must be assigned to a faculty before requesting a field-supervisor invitation.');
 
-        if (! $supervisor) {
-            return back()->withErrors([
-                'field_supervisor_email' => 'No field supervisor account uses this email. Ask your supervisor to register first.',
-            ])->withInput();
-        }
+        $facultyStaff = User::query()
+            ->where('faculty', $placement->faculty_name)
+            ->whereIn('role', ['faculty_handler', 'faculty_dean'])
+            ->where('is_active', true)
+            ->get();
+        abort_if($facultyStaff->isEmpty(), 409, 'There are no active faculty staff to receive the invitation request.');
 
-        $placement->fieldSupervisor()->associate($supervisor);
-        $placement->save();
+        $email = strtolower($validated['field_supervisor_email']);
+        $placement->forceFill([
+            'field_supervisor_email' => $email,
+        ])->save();
 
-        return redirect()->route('dashboard')->with('status', 'Your field supervisor has been connected.');
+        $facultyStaff->each(fn (User $facultyUser) => $facultyUser->notify(new WorkspaceNotice(
+            'Field supervisor invitation requested',
+            $request->user()->name.' requested an invitation for '.$email.'.',
+            ['placement_id' => $placement->id],
+        )));
+
+        return redirect()->route('dashboard')->with('status', 'Your field supervisor\'s email has been sent to your faculty. They will send an invitation to that address.');
     }
 
     public function connectAcademicSupervisor(Request $request, Placement $placement): RedirectResponse
@@ -124,5 +71,117 @@ class PlacementController extends Controller
         $placement->save();
 
         return redirect()->route('dashboard')->with('status', 'Your academic supervisor has been connected.');
+    }
+
+    public function confirm(Request $request, Placement $placement): RedirectResponse
+    {
+        abort_unless($placement->student_id === $request->user()->id, 403);
+        abort_if($placement->faculty_review_status !== null, 409, 'Respond to the faculty verification request instead.');
+        abort_unless($request->user()->isApproved(), 403);
+        abort_if($placement->document_status === 'approved', 409, 'This placement has already been approved.');
+
+        $placement->forceFill(['student_confirmed_at' => now()])->save();
+
+        User::query()->where('role', 'admin')->each(fn (User $admin) => $admin->notify(new \App\Notifications\WorkspaceNotice(
+            'Student confirmed internship place',
+            $request->user()->name.' confirmed '.$placement->company_name.' as their internship placement.',
+            ['placement_id' => $placement->id],
+        )));
+
+        return redirect()->route('dashboard')->with('status', 'Your internship place is confirmed and ready for administrator review.');
+    }
+
+    public function uploadDocuments(Request $request, Placement $placement): RedirectResponse
+    {
+        abort_unless($placement->student_id === $request->user()->id, 403);
+        abort_if(
+            $placement->faculty_review_status !== null
+                && $placement->faculty_review_status !== 'correction_requested',
+            409,
+            'Supporting letters can only be replaced after the faculty requests a correction.'
+        );
+        abort_unless($placement->document_status !== 'approved', 409, 'Approved placement documents cannot be replaced.');
+
+        $validated = $request->validate([
+            'acceptance_document' => ['required', 'file', 'mimes:pdf', 'max:10240'],
+            'placement_document' => ['required', 'file', 'mimes:pdf', 'max:10240'],
+        ]);
+
+        $acceptancePath = $request->file('acceptance_document')->store('acceptance-letters');
+        if (! $acceptancePath) {
+            throw new \RuntimeException('The company acceptance letter could not be stored. Please try again.');
+        }
+
+        $placementPath = $request->file('placement_document')->store('placement-letters');
+        if (! $placementPath) {
+            throw new \RuntimeException('The faculty placement letter could not be stored. Please try again.');
+        }
+
+        $placement->forceFill([
+            'acceptance_document_path' => $acceptancePath,
+            'placement_document_path' => $placementPath,
+            'document_status' => 'pending',
+            'document_reviewed_by_id' => null,
+            'document_reviewed_at' => null,
+            'document_review_notes' => null,
+        ])->save();
+
+        return redirect()->route('dashboard')->with('status', 'Both placement letters were uploaded for administrator review.');
+    }
+
+    public function assignAcademicSupervisor(Request $request, Placement $placement): RedirectResponse
+    {
+        $validated = $request->validate([
+            'academic_supervisor_id' => ['required', 'integer', 'exists:users,id'],
+        ]);
+
+        $supervisor = User::query()->findOrFail($validated['academic_supervisor_id']);
+        abort_unless(
+            $supervisor->role === 'academic_supervisor'
+                && $supervisor->isApproved()
+                && $supervisor->hasVerifiedEmail(),
+            422,
+            'Choose an activated academic supervisor account.'
+        );
+        abort_unless(
+            $supervisor->course === $placement->student->course,
+            422,
+            'The academic supervisor must be assigned to the student’s program.'
+        );
+
+        DB::transaction(function () use ($placement, $supervisor) {
+            User::query()->whereKey($supervisor->id)->lockForUpdate()->firstOrFail();
+
+            if ($placement->academic_supervisor_id !== $supervisor->id) {
+                $assignedStudents = Placement::query()
+                    ->where('academic_supervisor_id', $supervisor->id)
+                    ->where('id', '!=', $placement->id)
+                    ->whereHas('student', fn ($query) => $query->where('course', $placement->student->course))
+                    ->count();
+
+                if ($assignedStudents >= 10) {
+                    throw ValidationException::withMessages([
+                        'academic_supervisor_id' => 'This academic supervisor already has the maximum of 10 students in this program.',
+                    ]);
+                }
+            }
+
+            $placement->academicSupervisor()->associate($supervisor);
+            $placement->save();
+        });
+
+        $placement->student->notify(new \App\Notifications\WorkspaceNotice(
+            'Academic supervisor assigned',
+            $supervisor->name.' has been assigned as your academic supervisor.',
+            ['placement_id' => $placement->id],
+        ));
+
+        $supervisor->notify(new \App\Notifications\WorkspaceNotice(
+            'Student assigned for supervision',
+            'You have been assigned to '.$placement->student->name.' in '.$placement->student->course.'.',
+            ['placement_id' => $placement->id],
+        ));
+
+        return back()->with('status', 'The academic supervisor assignment has been saved.');
     }
 }

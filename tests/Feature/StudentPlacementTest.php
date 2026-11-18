@@ -2,57 +2,43 @@
 
 use App\Models\Placement;
 use App\Models\User;
-use Illuminate\Http\UploadedFile;
-use Illuminate\Support\Facades\Storage;
+use App\Notifications\WorkspaceNotice;
 
 test('guests must sign in before accessing student tools', function () {
     $this->get(route('dashboard'))->assertRedirect(route('login'));
-    $this->get(route('placements.create'))->assertRedirect(route('login'));
-    $this->post(route('placements.store'))->assertRedirect(route('login'));
 });
 
-test('a student can view the workspace and placement setup form', function () {
-    $student = User::factory()->create(['role' => 'student']);
+test('a student can view the workspace while waiting to register a mapped placement', function () {
+    $student = User::factory()->create([
+        'role' => 'student',
+        'course' => 'BACHELOR OF COMMERCE',
+    ]);
 
     $this->actingAs($student)
         ->get(route('dashboard'))
         ->assertOk()
-        ->assertSee('Set up your placement')
-        ->assertSee('Every workday, accounted for.');
-
-    $this->get(route('placements.create'))
-        ->assertOk()
-        ->assertSee('Company acceptance letter')
-        ->assertSee('Weekly work schedule')
-        ->assertSee('Every workday, accounted for.');
+        ->assertSee('Submit your internship details and supporting letters')
+        ->assertSee('Submit to faculty');
 });
 
-test('a student can save placement details and a weekly schedule', function () {
-    Storage::fake('local');
+    test('the legacy placement creation paths remain unavailable', function () {
     $student = User::factory()->create(['role' => 'student', 'verification_status' => 'approved']);
 
-    $response = $this->actingAs($student)->post(route('placements.store'), [
-        'company_name' => 'Northstar Engineering',
-        'company_address' => '12 Market Road',
-        'acceptance_document' => UploadedFile::fake()->create('acceptance.pdf', 40, 'application/pdf'),
-        'placement_document' => UploadedFile::fake()->create('placement-letter.pdf', 40, 'application/pdf'),
-        'start_date' => '2026-11-02',
-        'end_date' => '2027-01-29',
-        'workdays' => ['1', '2', '3', '4', '5'],
-        'start_time' => '08:00',
-        'end_time' => '17:00',
-    ]);
-
-    $response->assertRedirect(route('dashboard'));
-    $placement = Placement::where('student_id', $student->id)->firstOrFail();
-    expect($placement->document_status)->toBe('pending');
-    expect($placement->schedules)->toHaveCount(5);
-    Storage::disk('local')->assertExists($placement->acceptance_document_path);
-    Storage::disk('local')->assertExists($placement->placement_document_path);
+    $this->actingAs($student)->get('/placements/create')->assertNotFound();
+    $this->actingAs($student)->post('/placements', [])->assertNotFound();
 });
 
-test('a student can connect their registered field supervisor by email', function () {
+test('a student can request a field supervisor invitation by email', function () {
     $student = User::factory()->create(['role' => 'student']);
+    $facultyHandler = User::factory()->create([
+        'role' => 'faculty_handler',
+        'faculty' => 'Faculty of Commerce',
+    ]);
+    $facultyDean = User::factory()->create([
+        'role' => 'faculty_dean',
+        'faculty' => 'Faculty of Commerce',
+    ]);
+    $admin = User::factory()->create(['role' => 'admin']);
     $supervisor = User::factory()->create([
         'email' => 'field.supervisor@example.com',
         'role' => 'field_supervisor',
@@ -63,6 +49,7 @@ test('a student can connect their registered field supervisor by email', functio
         'start_date' => '2026-11-02',
         'end_date' => '2027-01-29',
         'status' => 'active',
+        'faculty_name' => 'Faculty of Commerce',
     ]);
 
     $this->actingAs($student)
@@ -71,11 +58,28 @@ test('a student can connect their registered field supervisor by email', functio
         ])
         ->assertRedirect(route('dashboard'));
 
-    expect($placement->fresh()->field_supervisor_id)->toBe($supervisor->id);
+    expect($placement->fresh()->field_supervisor_id)->toBeNull()
+        ->and($placement->fresh()->field_supervisor_email)->toBe('field.supervisor@example.com');
+    $this->assertDatabaseHas('notifications', [
+        'notifiable_id' => $facultyHandler->id,
+        'type' => WorkspaceNotice::class,
+    ]);
+    $this->assertDatabaseHas('notifications', [
+        'notifiable_id' => $facultyDean->id,
+        'type' => WorkspaceNotice::class,
+    ]);
+    $this->assertDatabaseMissing('notifications', [
+        'notifiable_id' => $admin->id,
+        'type' => WorkspaceNotice::class,
+    ]);
 });
 
-test('a student cannot connect an account that is not a field supervisor', function () {
+test('a field supervisor invitation can be requested before an account exists', function () {
     $student = User::factory()->create(['role' => 'student']);
+    User::factory()->create([
+        'role' => 'faculty_handler',
+        'faculty' => 'Faculty of Commerce',
+    ]);
     $otherAccount = User::factory()->create(['role' => 'academic_supervisor']);
     $placement = Placement::create([
         'student_id' => $student->id,
@@ -83,6 +87,7 @@ test('a student cannot connect an account that is not a field supervisor', funct
         'start_date' => '2026-11-02',
         'end_date' => '2027-01-29',
         'status' => 'active',
+        'faculty_name' => 'Faculty of Commerce',
     ]);
 
     $this->actingAs($student)
@@ -91,12 +96,13 @@ test('a student cannot connect an account that is not a field supervisor', funct
             'field_supervisor_email' => $otherAccount->email,
         ])
         ->assertRedirect(route('dashboard'))
-        ->assertSessionHasErrors('field_supervisor_email');
+        ->assertSessionHasNoErrors();
 
-    expect($placement->fresh()->field_supervisor_id)->toBeNull();
+    expect($placement->fresh()->field_supervisor_id)->toBeNull()
+        ->and($placement->fresh()->field_supervisor_email)->toBe($otherAccount->email);
 });
 
-test('a student can connect their assigned academic supervisor by email', function () {
+test('students cannot self-assign academic supervisors', function () {
     $student = User::factory()->create(['role' => 'student']);
     $supervisor = User::factory()->create([
         'email' => 'academic.supervisor@school.example',
@@ -110,16 +116,13 @@ test('a student can connect their assigned academic supervisor by email', functi
         'status' => 'active',
     ]);
 
-    $this->actingAs($student)
-        ->post(route('placements.academic-supervisor', $placement), [
-            'academic_supervisor_email' => 'ACADEMIC.SUPERVISOR@school.example',
-        ])
-        ->assertRedirect(route('dashboard'));
-
-    expect($placement->fresh()->academic_supervisor_id)->toBe($supervisor->id);
+    $this->actingAs($student)->post(route('admin.placements.academic-supervisor', $placement), [
+        'academic_supervisor_id' => $supervisor->id,
+    ])->assertForbidden();
+    expect($placement->fresh()->academic_supervisor_id)->toBeNull();
 });
 
-test('a student cannot connect a non-academic account as their academic supervisor', function () {
+test('only an administrator can assign an academic supervisor', function () {
     $student = User::factory()->create(['role' => 'student']);
     $fieldSupervisor = User::factory()->create(['role' => 'field_supervisor']);
     $placement = Placement::create([
@@ -130,14 +133,10 @@ test('a student cannot connect a non-academic account as their academic supervis
         'status' => 'active',
     ]);
 
-    $this->actingAs($student)
-        ->from(route('dashboard'))
-        ->post(route('placements.academic-supervisor', $placement), [
-            'academic_supervisor_email' => $fieldSupervisor->email,
-        ])
-        ->assertRedirect(route('dashboard'))
-        ->assertSessionHasErrors('academic_supervisor_email');
-
+    $admin = User::factory()->create(['role' => 'admin']);
+    $this->actingAs($admin)->post(route('admin.placements.academic-supervisor', $placement), [
+        'academic_supervisor_id' => $fieldSupervisor->id,
+    ])->assertStatus(422);
     expect($placement->fresh()->academic_supervisor_id)->toBeNull();
 });
 
@@ -245,7 +244,16 @@ test('an assigned academic supervisor can submit an assessment', function () {
     $report = $placement->dailyReports()->create([
         'report_date' => '2026-11-03',
         'activities' => 'Submitted a report reflecting on the skills applied this week.',
-        'status' => 'submitted',
+        'status' => 'field_approved',
+        'submitted_at' => now(),
+    ]);
+    $fieldSupervisor = User::factory()->create(['role' => 'field_supervisor']);
+    $report->assessments()->create([
+        'placement_id' => $placement->id,
+        'supervisor_id' => $fieldSupervisor->id,
+        'rating' => 4,
+        'strengths' => 'The student accurately documented their work.',
+        'overall_feedback' => 'The report is clear and shows steady progress.',
         'submitted_at' => now(),
     ]);
 
